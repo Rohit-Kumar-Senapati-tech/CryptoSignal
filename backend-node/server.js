@@ -31,22 +31,14 @@ const server = http.createServer(app);
 // ── Socket.io setup ────────────────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://cryptosignal-frontend-phi.vercel.app",
-      process.env.FRONTEND_URL,
-    ].filter(Boolean),
+    origin:  process.env.FRONTEND_URL || "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
 
 // ── Middleware ─────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://cryptosignal-frontend-phi.vercel.app",
-    process.env.FRONTEND_URL,
-  ].filter(Boolean),
+  origin: process.env.FRONTEND_URL || "http://localhost:5173",
   credentials: true,
 }));
 app.use(express.json());
