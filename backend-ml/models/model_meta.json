@@ -1,5 +1,5 @@
 {
-  "trained_at": "2026-03-21T03:26:12.624911",
+  "trained_at": "2026-03-21T15:41:35.211487",
   "symbols": [
     "BTC-USD",
     "ETH-USD",
@@ -61,45 +61,45 @@
     "folds": [
       {
         "fold": 1,
-        "accuracy": 0.5321,
-        "roc_auc": 0.5462
+        "accuracy": 0.5186,
+        "roc_auc": 0.5398
       },
       {
         "fold": 2,
-        "accuracy": 0.5198,
-        "roc_auc": 0.5332
+        "accuracy": 0.5211,
+        "roc_auc": 0.5404
       },
       {
         "fold": 3,
-        "accuracy": 0.5595,
-        "roc_auc": 0.5756
+        "accuracy": 0.5477,
+        "roc_auc": 0.5715
       },
       {
         "fold": 4,
-        "accuracy": 0.5392,
-        "roc_auc": 0.5579
+        "accuracy": 0.5468,
+        "roc_auc": 0.5602
       },
       {
         "fold": 5,
-        "accuracy": 0.5342,
-        "roc_auc": 0.5602
+        "accuracy": 0.5249,
+        "roc_auc": 0.5608
       }
     ],
-    "avg_accuracy": 0.537,
-    "avg_roc_auc": 0.5546
+    "avg_accuracy": 0.5318,
+    "avg_roc_auc": 0.5545
   },
   "hold_out": {
-    "accuracy": 0.7733,
-    "roc_auc": 0.87
+    "accuracy": 0.7814,
+    "roc_auc": 0.8662
   },
   "confusion_matrix": [
     [
-      1251,
-      216
+      1258,
+      208
     ],
     [
-      429,
-      949
+      414,
+      965
     ]
   ]
 }
