@@ -32,5 +32,5 @@ COINS_CACHE_TIMEOUT   = 3600   # 1 hour
 NEWS_CACHE_TIMEOUT    = 600    # 10 minutes
 
 # ── Rate limiting ─────────────────────────────────
-RATE_LIMIT_DEFAULT = "200 per day;50 per hour"
-RATE_LIMIT_PREDICT = "30 per minute"
+RATE_LIMIT_DEFAULT = "1000 per day;200 per hour"
+RATE_LIMIT_PREDICT = "100 per minute"

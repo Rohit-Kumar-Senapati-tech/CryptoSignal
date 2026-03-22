@@ -42,13 +42,32 @@ cache   = Cache(app)
 limiter = Limiter(get_remote_address, app=app, default_limits=[RATE_LIMIT_DEFAULT], storage_uri="memory://")
 
 # ── Load model ─────────────────────────────────────────────────────────────────
-try:
-    model = joblib.load(MODEL_PATH)
-    log.info("Model loaded from %s", MODEL_PATH)
-except FileNotFoundError:
-    model = None
-    log.error("Model not found — run: python models/train_model.py")
+# ── Load or train model ────────────────────────────────────────────────────────
+def load_or_train_model():
+    if os.path.exists(MODEL_PATH):
+        log.info("Loading existing model from %s", MODEL_PATH)
+        return joblib.load(MODEL_PATH)
+    log.warning("No model found — training now (takes 5-10 mins)...")
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    import subprocess
+    result = subprocess.run(
+        ["python", "models/train_model.py"],
+        cwd=BASE_DIR,
+        capture_output=True,
+        text=True,
+        timeout=900,  # 15 min max
+    )
+    log.info(result.stdout[-2000:] if result.stdout else "")
+    if result.returncode != 0:
+        log.error("Training failed: %s", result.stderr[-1000:])
+        return None
+    if os.path.exists(MODEL_PATH):
+        log.info("✅ Model trained and saved!")
+        return joblib.load(MODEL_PATH)
+    return None
 
+model = load_or_train_model()
+log.info("Model ready: %s", model is not None)
 # ── Load feature list (dynamic — set by train_model.py) ───────────────────────
 FEATURES_PATH = os.path.join(BASE_DIR, "models", "features.json")
 try:
