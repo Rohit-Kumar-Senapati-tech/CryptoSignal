@@ -1,9 +1,6 @@
-import os
-import traceback
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_caching import Cache
-from flask_limiter import Limiter
 
 from config import (
     FLASK_HOST,
@@ -11,8 +8,6 @@ from config import (
     FLASK_DEBUG,
     CACHE_TYPE,
     CACHE_DEFAULT_TIMEOUT,
-    RATE_LIMIT_DEFAULT,
-    RATE_LIMIT_PREDICT,
 )
 
 app = Flask(__name__)
@@ -27,26 +22,6 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 # ── Cache ───────────────────────────────────────────────────────────────────
 cache = Cache(app)
-
-# ── Real IP for Render / proxy setup ───────────────────────────────────────
-def real_ip():
-    forwarded = request.headers.get("X-Forwarded-For", "")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-
-    real = request.headers.get("X-Real-IP")
-    if real:
-        return real.strip()
-
-    return request.remote_addr or "unknown"
-
-# ── Rate limiter ────────────────────────────────────────────────────────────
-limiter = Limiter(
-    key_func=real_ip,
-    app=app,
-    default_limits=[RATE_LIMIT_DEFAULT],
-    storage_uri="memory://",
-)
 
 # ── Health route ────────────────────────────────────────────────────────────
 @app.route("/health", methods=["GET"])
@@ -108,8 +83,8 @@ def price():
     symbol = request.args.get("symbol", "BTC-USD")
     return jsonify({
         "symbol": symbol,
-        "price": 0,
-        "change_24h": 0
+        "price": 68500.25,
+        "change_24h": 1.45
     }), 200
 
 # ── Indicators route ────────────────────────────────────────────────────────
@@ -120,12 +95,12 @@ def indicators():
         "symbol": symbol,
         "rsi": 52.4,
         "macd": 1.2,
-        "ema": 0,
-        "sma": 0,
-        "bb_high": 0,
-        "bb_low": 0,
-        "return": 0,
-        "volume_change": 0
+        "ema": 68000.0,
+        "sma": 67850.0,
+        "bb_high": 69200.0,
+        "bb_low": 67100.0,
+        "return": 0.018,
+        "volume_change": 0.11
     }), 200
 
 # ── Sentiment route ─────────────────────────────────────────────────────────
@@ -141,10 +116,8 @@ def sentiment():
 
 # ── Predict route ───────────────────────────────────────────────────────────
 @app.route("/predict", methods=["GET"])
-@limiter.limit(RATE_LIMIT_PREDICT)
 def predict():
     symbol = request.args.get("symbol", "BTC-USD")
-
     return jsonify({
         "symbol": symbol,
         "prediction": "Bullish",
@@ -155,7 +128,6 @@ def predict():
 
 # ── Batch predict route ─────────────────────────────────────────────────────
 @app.route("/predict/batch", methods=["POST"])
-@limiter.limit(RATE_LIMIT_PREDICT)
 def predict_batch():
     body = request.get_json(silent=True) or {}
     symbols = body.get("symbols", [])
@@ -175,13 +147,6 @@ def predict_batch():
     }), 200
 
 # ── Error handlers ──────────────────────────────────────────────────────────
-@app.errorhandler(429)
-def ratelimit_handler(e):
-    return jsonify({
-        "error": "Too many requests",
-        "message": "Rate limit exceeded. Please wait and try again."
-    }), 429
-
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({
