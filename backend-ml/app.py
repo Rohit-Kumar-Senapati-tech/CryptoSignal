@@ -79,7 +79,7 @@ def get_news_query(symbol: str) -> str:
     return keyword_map.get(coin, f"{coin} crypto")
 
 
-@cache.cached(timeout=COINS_CACHE_TIMEOUT, key_prefix="binance_coins_v2")
+@cache.cached(timeout=COINS_CACHE_TIMEOUT, key_prefix="binance_coins_v3")
 def fetch_binance_coins():
     resp = requests.get(BINANCE_EXCHANGE_INFO_URL, timeout=15)
     resp.raise_for_status()
@@ -111,11 +111,16 @@ def fetch_binance_coins():
         "LINK", "MATIC", "LTC", "DOT", "TRX", "ATOM", "NEAR",
         "APT", "ARB", "OP"
     ]
-    coins.sort(key=lambda x: (priority.index(x["symbol"]) if x["symbol"] in priority else 9999, x["symbol"]))
+    coins.sort(
+        key=lambda x: (
+            priority.index(x["symbol"]) if x["symbol"] in priority else 9999,
+            x["symbol"]
+        )
+    )
     return coins
 
 
-@cache.memoize(timeout=60)
+@cache.memoize(timeout=90)
 def fetch_klines(symbol: str, interval: str = "1h", limit: int = 200):
     pair = binance_pair(symbol)
     params = {
@@ -146,8 +151,7 @@ def fetch_klines(symbol: str, interval: str = "1h", limit: int = 200):
             "Volume": float(k[5]),
         })
 
-    df = pd.DataFrame(rows)
-    return df
+    return pd.DataFrame(rows)
 
 
 def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
@@ -171,7 +175,7 @@ def compute_indicators(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-@cache.memoize(timeout=60)
+@cache.memoize(timeout=90)
 def latest_snapshot(symbol: str):
     df = fetch_klines(symbol, interval="1h", limit=200)
     df = compute_indicators(df)
@@ -327,7 +331,6 @@ def fetch_news(symbol: str):
 
     query = get_news_query(symbol)
 
-    # GNews is usually more reliable than NewsAPI on hosted apps
     url = "https://gnews.io/api/v4/search"
     params = {
         "q": query,
@@ -371,6 +374,7 @@ def fetch_news(symbol: str):
 
 
 @app.route("/health", methods=["GET"])
+@cache.cached(timeout=30)
 def health():
     return jsonify({
         "status": "ok",
@@ -380,6 +384,7 @@ def health():
 
 
 @app.route("/model/info", methods=["GET"])
+@cache.cached(timeout=300)
 def model_info():
     return jsonify({
         "status": "ok",
@@ -390,6 +395,7 @@ def model_info():
 
 
 @app.route("/coins", methods=["GET"])
+@cache.cached(timeout=COINS_CACHE_TIMEOUT)
 def coins():
     try:
         return jsonify(fetch_binance_coins()[:80]), 200
@@ -398,6 +404,7 @@ def coins():
 
 
 @app.route("/binance/coins", methods=["GET"])
+@cache.cached(timeout=COINS_CACHE_TIMEOUT)
 def binance_coins():
     try:
         return jsonify(fetch_binance_coins()), 200
@@ -406,6 +413,7 @@ def binance_coins():
 
 
 @app.route("/price", methods=["GET"])
+@cache.cached(timeout=60, query_string=True)
 def price():
     try:
         symbol = normalize_symbol(request.args.get("symbol", "BTC-USD"))
@@ -420,6 +428,7 @@ def price():
 
 
 @app.route("/indicators", methods=["GET"])
+@cache.cached(timeout=60, query_string=True)
 def indicators():
     try:
         symbol = normalize_symbol(request.args.get("symbol", "BTC-USD"))
@@ -440,6 +449,7 @@ def indicators():
 
 
 @app.route("/sentiment", methods=["GET"])
+@cache.cached(timeout=NEWS_CACHE_TIMEOUT, query_string=True)
 def sentiment():
     try:
         symbol = normalize_symbol(request.args.get("symbol", "BTC-USD"))
@@ -455,6 +465,7 @@ def sentiment():
 
 
 @app.route("/predict", methods=["GET"])
+@cache.cached(timeout=60, query_string=True)
 def predict():
     try:
         symbol = normalize_symbol(request.args.get("symbol", "BTC-USD"))
